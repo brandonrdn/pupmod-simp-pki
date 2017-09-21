@@ -1,0 +1,4 @@
+pki::base: 'C:\ProgramData\SIMP\pki'
+pki::simp_dir: 'C:\ProgramData\SIMP'
+pki::owner: 'Administrator'
+pki::group: 'Administrators' 

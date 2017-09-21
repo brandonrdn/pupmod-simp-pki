@@ -50,9 +50,13 @@
 #
 # @author Trevor Vaughan <tvaughan@onyxpoint.com>
 #
+
 class pki (
   Variant[Boolean,Enum['simp']] $pki                = simplib::lookup('simp_options::pki', { 'default_value' => 'simp' }),
   Stdlib::Absolutepath          $base               = simplib::lookup('simp_options::pki::source', { 'default_value' => '/etc/pki/simp/x509' }),
+  String                        $simp_dir           = '/etc/pki/simp',
+  String                        $owner              = 'root',
+  String                        $group              = 'root',
   String                        $private_key_source = "puppet:///modules/${module_name}/keydist/${facts['fqdn']}/${facts['fqdn']}.pem",
   String                        $public_key_source  = "puppet:///modules/${module_name}/keydist/${facts['fqdn']}/${facts['fqdn']}.pub",
   Boolean                       $auditd             = simplib::lookup('simp_options::auditd', { 'default_value' => false}),
@@ -65,10 +69,10 @@ class pki (
 
   if $pki == 'simp' {
 
-    file { '/etc/pki/simp':
+    file { "${simp_dir}":
       ensure => 'directory',
-      owner  => 'root',
-      group  => 'root',
+      owner  => "${owner}",
+      group  => "${group}",
       mode   => '0655',
       tag    => 'firstrun',
     }
@@ -104,11 +108,11 @@ class pki (
     }
   }
 
-  $_base_require = $pki ? { 'simp' => File['/etc/pki/simp'], default => undef }
+  $_base_require = $pki ? { 'simp' => File["${simp_dir}"], default => undef }
   file { $base:
     ensure  => 'directory',
-    owner   => 'root',
-    group   => 'root',
+    owner   => "${owner}",
+    group   => "${group}",
     mode    => '0655',
     tag     => 'firstrun',
     require => $_base_require
@@ -116,8 +120,8 @@ class pki (
 
   file { $private_key_dir:
     ensure => 'directory',
-    owner  => 'root',
-    group  => 'root',
+    owner  => "${owner}",
+    group  => "${group}",
     mode   => '0550',
     purge  => true,
     tag    => 'firstrun'
@@ -125,16 +129,16 @@ class pki (
 
   file { $public_key_dir:
     ensure => 'directory',
-    owner  => 'root',
-    group  => 'root',
+    owner  => "${owner}",
+    group  => "${group}",
     mode   => '0555',
     purge  => true,
     tag    => 'firstrun'
   }
 
   file { $private_key:
-    owner     => 'root',
-    group     => 'root',
+    owner     => "${owner}",
+    group     => "${group}",
     mode      => '0440',
     source    => $_private_key_source,
     tag       => 'firstrun',
@@ -143,8 +147,8 @@ class pki (
   }
 
   file { $public_key:
-    owner     => 'root',
-    group     => 'root',
+    owner     => "${owner}",
+    group     => "${group}",
     mode      => '0444',
     source    => $_public_key_source,
     tag       => 'firstrun',
@@ -158,8 +162,8 @@ class pki (
 
   file { $ingress:
     ensure       => 'directory',
-    owner        => 'root',
-    group        => 'root',
+    owner        => "${owner}",
+    group        => "${group}",
     recurse      => true,
     mode         => '0644',
     purge        => true,
@@ -173,8 +177,8 @@ class pki (
 
   file { $cacerts:
     ensure  => 'directory',
-    owner   => 'root',
-    group   => 'root',
+    owner   => "${owner}",
+    group   => "${group},
     mode    => '0644',
     seltype => 'cert_t',
     recurse => true,

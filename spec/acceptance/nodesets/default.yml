@@ -1,18 +1,39 @@
 HOSTS:
-  el7:
+  # el7:
+  #   roles:
+  #     - default
+  #     - server
+  #   platform: el-7-x86_64
+  #   box: centos/7
+  #   hypervisor: vagrant
+  #   vagrant_memsize: 256
+  # el6:
+  #   roles:
+  #     - server
+  #   platform: el-6-x86_64
+  #   box: centos/6
+  #   hypervisor: vagrant
+  #   vagrant_memsize: 256
+  win2012r2:
     roles:
-      - default
-      - server
-    platform: el-7-x86_64
-    box: centos/7
+      - windows
+    platform: windows-server-amd64
+    box: opentable/win-2012r2-standard-amd64-nocm
     hypervisor: vagrant
-  el6:
+    user: vagrant
+    communicator: winrm
+    is_cygwin: false
+    vagrant_memsize: 4096
+  win2008r2:
     roles:
-      - server
-    platform: el-6-x86_64
-    box: centos/6
+      - windows
+    platform: windows-server-amd64
+    box: opentable/win-2008r2-standard-amd64-nocm
     hypervisor: vagrant
+    user: vagrant
+    communicator: winrm
+    is_cygwin: false
+    vagrant_memsize: 4096
 CONFIG:
   log_level: verbose
   type: aio
-  vagrant_memsize: 256
