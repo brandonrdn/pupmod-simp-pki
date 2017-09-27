@@ -178,7 +178,7 @@ class pki (
   file { $cacerts:
     ensure  => 'directory',
     owner   => "${owner}",
-    group   => "${group},
+    group   => "${group}",
     mode    => '0644',
     seltype => 'cert_t',
     recurse => true,
@@ -188,6 +188,6 @@ class pki (
   pki_cert_sync { $cacerts:
     source => $ingress,
     tag    => 'firstrun',
-    purge  => $sync_purge
+    purge  => $sync_purge,
   }
 }

@@ -1,8 +1,19 @@
+require 'beaker-rspec'
+require 'tmpdir'
+require 'yaml'
+require 'simp/beaker_helpers'
 require 'beaker-rspec/spec_helper'
 require 'beaker-rspec/helpers/serverspec'
+include Simp::BeakerHelpers
 require 'winrm'
 
-GEOTRUST_GLOBAL_CA = <<-EOM.freeze
+unless ENV['BEAKER_provision'] == 'no'
+
+  hosts.each do |host|
+    case host['platform']
+    when /windows/
+
+      GEOTRUST_GLOBAL_CA = <<-EOM.freeze
   -----BEGIN CERTIFICATE-----
   MIIDVDCCAjygAwIBAgIDAjRWMA0GCSqGSIb3DQEBBQUAMEIxCzAJBgNVBAYTAlVT
   MRYwFAYDVQQKEw1HZW9UcnVzdCBJbmMuMRswGQYDVQQDExJHZW9UcnVzdCBHbG9i
@@ -23,24 +34,73 @@ GEOTRUST_GLOBAL_CA = <<-EOM.freeze
   hw4EbNX/3aBd7YdStysVAq45pmp06drE57xNNB6pXE0zX5IJL4hmXXeXxx12E6nV
   5fEWCRE11azbJHFwLJhWC9kXtNHjUStedejV0NxPNO3CBWaAocvmMw==
   -----END CERTIFICATE-----
-EOM
+      EOM
 
-hosts.each do |host|
-  version = ENV['PUPPET_GEM_VERSION'] || '3.8.3'
-  install_puppet(version: version)
-  install_cert_on_windows(host, 'geotrustglobal', GEOTRUST_GLOBAL_CA)
-  on host, puppet('module', 'install', 'puppetlabs-stdlib')
-end
+      install_puppet_agent_on(host, options)
+      install_cert_on_windows(host, 'geotrustglobal', GEOTRUST_GLOBAL_CA)
+      on host, puppet('module', 'install', 'puppetlabs-stdlib')
+      on host, puppet('module', 'install', 'simp-simplib')
+      on host, puppet('module', 'install', 'simp-auditd')
 
-RSpec.configure do |c|
-  proj_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+    else
+      # Install Puppet
+      if host.is_pe?
+        install_pe
+      else
+        install_puppet
+      end
+    end
 
-  c.formatter = :documentation
+    RSpec.configure do |c|
+      c.host = host
 
-  c.before :suite do
-    path = File.expand_path(File.dirname(__FILE__) + '/../').split('/')
-    name = path[path.length - 1].split('-')[1]
-    # Install module and dependencies
-    puppet_module_install(source: proj_root, module_name: name)
+      if host['platform'] =~ /windows/
+        proj_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+
+        c.formatter = :documentation
+
+        c.before :suite do
+          path = File.expand_path(File.dirname(__FILE__) + '/../').split('/')
+          name = path[path.length - 1].split('-')[1]
+          # Install module and dependencies
+          puppet_module_install(source: proj_root, module_name: name)
+        end
+
+      else    
+        # ensure that environment OS is ready on each host
+        fix_errata_on hosts
+
+        # Readable test descriptions
+        c.formatter = :documentation
+
+        # Configure all nodes in nodeset
+        c.before :suite do
+          begin
+            # Install modules and dependencies from spec/fixtures/modules
+            copy_fixture_modules_to( hosts )
+            begin
+              server = only_host_with_role(hosts, 'server')
+            rescue ArgumentError =>e
+              server = only_host_with_role(hosts, 'default')
+            end
+
+            # Generate and install PKI certificates on each SUT
+            Dir.mktmpdir do |cert_dir|
+              run_fake_pki_ca_on(server, hosts, cert_dir )
+              hosts.each{ |sut| copy_pki_to( sut, cert_dir, '/etc/pki/simp-testing' )}
+            end
+
+            # add PKI keys
+            copy_keydist_to(server)
+          rescue StandardError, ScriptError => e
+            if ENV['PRY']
+              require 'pry'; binding.pry
+            else
+              raise e
+            end
+          end
+        end
+      end
+    end
   end
 end

@@ -21,6 +21,16 @@ describe 'pki_windows_sync' do
       it 'should be idempotent' do
         apply_manifest_on(win, manifest, :catch_changes => true)
       end
+
+      describe file('C:\ProgramData\SIMP\pki') do
+        it { should be_directory }
+      end
+
+      describe file('C:\ProgramData\SIMP') do
+        it { should be_grouped_into 'Administrators' }
+        it { should be_owned_by 'Administrator' }
+      end
+
     end
   end
 end

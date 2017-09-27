@@ -9,6 +9,7 @@ group :test do
   gem 'rake'
   gem 'puppet', ENV.fetch('PUPPET_VERSION',  '~> 4.0')
   gem 'rspec'
+  gem 'serverspec'
   gem 'rspec-puppet'
   gem 'hiera-puppet-helper'
   gem 'puppetlabs_spec_helper'
@@ -42,4 +43,5 @@ group :system_tests do
   gem 'simp-beaker-helpers', ENV.fetch('SIMP_BEAKER_HELPERS_VERSION', '~> 1.7')
   gem 'winrm', '1.8.1'
   gem 'beaker-puppet_install_helper', :require => false
+  gem 'serverspec'
 end
